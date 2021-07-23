@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+    <!-- From @https://www.codeply.com/v/xjn4SoQjD6 --->
+
+
+    {% if error %}
+        {% for er in error %}
+            <h5 class="h5 mb-5 font-weight-normal text-warning">  {{ er }} </h5>
+        {% endfor %}
+    {% endif %}
+
+    {% if user.authentificationByPassword %}
+
+        <div class="card card-outline-secondary">
+
+
+            <div class="card-header">
+                <h3 class="mb-0">Change Password</h3>
+            </div>
+            <div class="card-body">
+                <form class="form" role="form" autocomplete="off" method="post" action="/accounts/change_password">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="inputPasswordOld">Current Password</label>
+                        <input type="password" class="form-control" id="inputPasswordOld" name="oldPassword"
+                               required="">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputPasswordNew">New Password</label>
+                        <input type="password" class="form-control" id="inputPasswordNew" name="newPassword"
+                               required="">
+                        <span class="form-text small text-muted">
+                                            The password must be minimum 9 characters.
+                                        </span>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputPasswordNewVerify">Verify</label>
+                        <input type="password" class="form-control" id="inputPasswordNewVerify" name="newPasswordVerify"
+                               required="">
+                        <span class="form-text small text-muted">
+                                            To confirm, type the new password again.
+                                        </span>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success btn-lg float-right">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <div class="card card-outline-secondary">
+            <div class="card-header">
+                <h3 class="mb-0">Create normal account</h3>
+            </div>
+            <div class="card-body">
+                <form action="/accounts/synchronise_account" class="form" role="form" autocomplete="off" method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="inputPasswordNew">New Password</label>
+                        <input type="password" class="form-control" id="inputPasswordNew" name="newPassword"
+                               required="">
+                        <span class="form-text small text-muted">
+                                            The password must be minimum 9 characters.
+                                        </span>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputPasswordNewVerify">Verify</label>
+                        <input type="password" class="form-control" id="inputPasswordNewVerify" name="newPasswordVerify"
+                               required="">
+                        <span class="form-text small text-muted">
+                                            To confirm, type the new password again.
+                                        </span>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success btn-lg float-right">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+{% endblock %}

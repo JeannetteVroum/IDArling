@@ -1,0 +1,61 @@
+version: '3.7'
+#docker create volume postgres
+services:
+  nginx:
+    image: nginx:latest
+    ports: #Le serveur est accessible depuis ces deux ports (HTTP et HTTPS)
+      - "80:80"
+      - "443:443"
+    volumes_from:
+      - idarling_web
+    restart: always
+    volumes:
+      - static_volume:/opt/app/IDArling/static/ #Permet de servire directement les fichiers statiques
+      - ./nginx/certs:/etc/nginx/certs
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/service.template
+      - ./nginx/entrypoint.sh:/entrypoint.sh
+    environment:
+      - NGINX_HOST_NAME=idarling.fr #nom de domaine du site, il doit correspondre au FCQDN du certificat
+      - DAPHNE_PORT=8000 #Port d'écoute de Daphne (IDArling_Management)
+      - DAPHNE_HOST=idarling_web #Host du serveur web doit correspondre au nom de la machine d'IDArling Management
+    depends_on:
+      - idarling_web
+    links:
+      - idarling_web
+    entrypoint: [ "/entrypoint.sh" ]
+    command: [ "nginx", "-g", "daemon off;" ]
+  idarling_web:
+    image: idarling_management
+    env_file:
+      - ./prod.env #Fichier contenant les différentes variables d'environnement
+    restart: always
+    volumes:
+      - static_volume:/srv/IDArling_Management/IDArling_Management/static/
+      #- C:\Users\user\Documents\IDArling\IDArling_source_code\idarling_management\idarling_management:/srv/IDArling_Management/
+    depends_on:
+      - db
+  idarling:
+    image: idarling
+    ports:
+      - '1234:1234' #Port d'écoute du serveur IDArling
+    env_file:
+      - ./prod.env #Fichier contenant les différentes variables d'environnement
+    restart: always
+    depends_on:
+      - db
+    volumes:
+    - ./data/idb_volumes:/opt/app/idarling/files #Dossier contenant les IDBs
+  db:
+    image: postgres:12.0-alpine
+    volumes:
+     - ./data/postgres/postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=hello_django
+      - POSTGRES_DB=hello_django
+    ports:
+      - '5432:5432'
+    restart: always
+volumes:
+  static_volume:
+

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'custom/css/checkbox.css' %}"/>
+    {% csrf_token %}
+    <div class="col-md-6">
+        <div class="card">
+            <li class="list-group-item">
+                Authentification LDAP
+                <label class="switch ">
+                    <input id="authentification_ldap" type="checkbox" class="danger success"
+                           value={{ authentification_ldap }}>
+                    <span class="slider round"></span>
+                </label>
+            </li>
+
+            <li class="list-group-item">
+                Authentification username/password
+                <label class="switch ">
+                    <input id="authentification_username_password" type="checkbox" class="danger success"
+                           value="{{ authentification_username_password }}">
+                    <span class="slider round"></span>
+                </label>
+            </li>
+
+
+        </div>
+    </div>
+
+    <script>
+        var checkboxes = document.getElementsByTagName('input');
+
+        for (var i = 0; i < checkboxes.length; i++) {
+            if (checkboxes[i].type == 'checkbox') {
+                if (checkboxes[i].value === "True") {
+                    checkboxes[i].checked = true;
+                } else {
+                    checkboxes[i].checked = false;
+                }
+
+
+            }
+        }
+        $("input").click(function () {
+            if ($(this).attr("value") === "False") {
+                $(this).attr("value", "True");
+            } else {
+
+                $(this).attr("value", "False");
+            }
+
+            var form_data = new FormData(); //Encode form elements for submission
+            form_data.append('value', $(this).attr("value"));
+            form_data.append('id', $(this).attr("id"));
+            form_data.append('csrftoken', jQuery("[name=csrfmiddlewaretoken]").val());
+            $.ajax({
+                type: "POST",
+                data: form_data,
+                url: ' {% url "set_setting" %}',
+                contentType: false,
+                cache: false,
+                processData: false,
+            })
+        })
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+
+        $.ajaxSetup({
+            beforeSend: function (xhr, settings) {
+                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", jQuery("[name=csrfmiddlewaretoken]").val());
+                }
+            }
+        });
+    </script>
+
+
+{% endblock %}

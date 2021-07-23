@@ -1,0 +1,15 @@
+.content-left {
+    border-right: 1px solid black;
+}
+
+div#tree {
+    height: 100%;
+    width: 100%;
+}
+
+ul.fancytree-container {
+    height: 100%;
+    overflow: auto;
+    width: 100%;
+    border: none;
+}

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Notepad</title>
+</head>
+
+{% extends 'base.html' %}
+{% load static %}
+
+
+{% block content %}
+    <style>
+        th, td {
+            text-align: center;
+
+        }
+    </style>
+    <script src="{% static 'js/jquery-3.5.0.min.js' %}"></script>
+    <script src="{% static 'datatables-1.10.21/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'datatables-1.10.21/js/dataTables.bootstrap4.min.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'datatables-1.10.21/css/dataTables.bootstrap4.min.css' %}">
+
+    <div class="row align-items-start">
+        <div class="col-md-3">
+            <div class="row">
+                <h3 class="h3 mb-12 font-weight-normal">Notepad</h3>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <textarea class="mb-12 font-weight-normal" style="align-self: flex-start;width: 100%; height: 100%"
+                              id="textArea" {{ disabled }}></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <h3 id="log_title" class="h3 mb-12 font-weight-normal">Logs</h3>
+            <table id="log_table" class="table table-striped table-bordered" style="align-self: center">
+
+
+                <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>ea</th>
+                    <th>Tick</th>
+                    <th>details</th>
+                </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+                <tfoot>
+                <th>user</th>
+                <th>Type</th>
+                <th>ea</th>
+                <th>tick</th>
+                <th>details</th>
+
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    <style>
+        td {
+            max-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+    </style>
+
+    <script>
+        const schemeWs = (location.protocol == 'https:') ? 'wss://' : 'ws://';
+        const notepadSocket = new WebSocket(
+            schemeWs
+            + window.location.host
+            + '/ws/notepad/'
+            + {{database_id}}
+            +'/'
+        );
+
+        notepadSocket.onmessage = function (e) {
+            document.querySelector('#textArea').value = JSON.parse(e.data).message;
+        }
+        notepadSocket.onclose = function (e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        $('#textArea').on('input change keyup', function (e) {
+            const content = document.querySelector('#textArea');
+            const message = content.value;
+            notepadSocket.send(JSON.stringify({
+                'message': message
+            }));
+        });
+
+
+        $(document).ready(function () {
+            //Place footer search on log table
+            $('#log_table tfoot th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="Search ' + title + '"/>');
+            })
+            window.log_table = $('#log_table').DataTable({
+                'pageLength': 10,
+                fixedColumns: {
+                    heightMatch: 'auto'
+                },
+                'lengthChange': false,
+                'drawCallback': function () {
+                    var api = this.api();
+                    var rowCount = api.rows({page: 'current'}).rows().count();
+                    for (var i = 0; i < api.page.len() - (rowCount === 0 ? 1 : rowCount); i++) {
+
+                        var size_empty = $('.odd').height();
+                        $('#log_table tbody').append($('<tr style="height:' + size_empty + 'px;" class="odd">' +
+                            '<td class="dataTables_empty" colspan="5" valign="top"></td>'))
+                    }
+                },
+                'createdRow': function (row, data, dataIndex) {
+
+                },
+                initComplete: function () {
+                    this.api().columns().every(function () {
+                        var that = this;
+                        $('input', this.footer()).on(' keyup change clear', function () {
+                            if (that.search() !== this.value) {
+                                that.search(this.value).draw();
+                            }
+                        });
+                    });
+                }
+
+
+            });
+
+            $.ajax({
+                type: 'GET',
+                url: ' {% url "get_dict" %}',
+                data: {
+                    "database_id": {{ database_id }}
+                },
+                mimeType: 'json',
+                success: function (data) {
+
+                    $.each(data, function (i, data) {
+                        window.log_table.row.add([data.user, data.event_type, data.ea, data.tick, "<div style='overflow:auto'>" + JSON.stringify(data.details) + "</div>"]).draw();
+                    });
+
+                },
+                //fix same height for log table and notepad
+                complete: function () {
+                    var height_log_table = $('#log_table').height();
+                    $("textArea").css('height', height_log_table)
+                    var distance = $('#log_table_wrapper').offset().top - $('#log_title').offset().top;
+                    distance = parseFloat(distance);
+                    distance = distance + parseFloat($('#log_title').css("marginBottom").replace('px', ''));
+
+                    $('#textArea').css('marginTop', distance + "px")
+                }
+            });
+
+
+        });
+
+        //search empty size for a row and insert them (for fix height size)
+        $('#log_table').on("draw.dt", function () {
+            var api = $('#log_table').dataTable().api();
+            var rowCount = api.rows({page: 'current'}).rows().count();
+            var xxxx = $('#log_table tbody tr').length;
+            for (var i = 0; i < api.page.len() - xxxx; i++) {
+                var size_empty = $('.odd').height();
+                $('#log_table tbmodelody').append($('<tr style="height:' + size_empty + 'px;" class="odd">' + '<td class="dataTables_empty" colspan="5" valign="top"></td>'))
+            }
+        })
+
+
+    </script>
+
+
+{% endblock %}

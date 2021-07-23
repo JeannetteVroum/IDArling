@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IDArling Management </title>
+
+    {% load static %}
+    <script src="{% static 'js/jquery-3.5.0.min.js' %}"></script>
+    <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'bootstrap/css/bootstrap.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'custom/css/base.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'custom/css/signin.css' %}"/>
+    <link rel="shortcut icon" href="{% static 'favicon/favicon.png' %}"/>
+
+</head>
+
+<body>
+
+<div class="container-fluid">
+    {% if user.is_authenticated %}
+
+        <div class="row" style="margin-bottom: 20px;">
+            <div class="col-md-12">
+                <nav class="navbar navbar-expand-lg navbar-light fixed-top bg-primary">
+
+                    <a class="navbar-brand" href="#">IDArling</a>
+
+                    <button class="navbar-toggler" type="button" data-toggle="collapse"
+                            data-target="#navbarSupportedContent"
+                            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="navbar-nav mr-auto">
+                            <li class="nav-item active">
+                                <a class="nav-link" href="/accounts/">Account <span class="sr-only">(current)</span></a>
+                            </li>
+
+                            <li class="dropdown">
+                                <a class="nav-link dropdown-toggle" id="navbarDropdown" role="button"
+                                   data-toggle="dropdown"
+                                   aria-haspopup="true" aria-expanded="false">
+                                    Management
+                                </a>
+                                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                    {% if user.is_superuser %}
+                                        <a class="nav-link" href='{% url "management" %}'>Management user</a>
+                                    {% endif %}
+                                    {% if user.is_superuser %}
+                                        <a class="nav-link" href='{% url "create_user" %}'>Create user</a>
+                                    {% endif %}
+                                    <a class="nav-link" href='{% url "management_project" %}'>Management project</a>
+
+                                </div>
+                            </li>
+                            {% if user.is_superuser %}
+                                <li class="nav-item active">
+                                    <a class="nav-link" href="/settings">Settings</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+
+                        <a href="/accounts/logout/">
+                            <img src="{% static 'icons/account-logout.svg' %}">
+                        </a>
+                    </div>
+
+                </nav>
+            </div>
+        </div>
+
+    {% endif %}
+
+
+    {% block content %}
+    {% endblock %}
+</div>
+</body>
+</html>

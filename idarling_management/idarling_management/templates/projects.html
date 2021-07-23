@@ -1,0 +1,1141 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+    {% load static %}
+
+    <script src="{% static 'js/jquery-3.5.0.min.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'bootstrap/css/bootstrap.css' %}">
+    <script src="{% static 'fancytree-2.35.0/jquery.fancytree-all-deps.min.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'fancytree-2.35.0/skin-win8/ui.fancytree.min.css' %}">
+    <script src="{% static 'datatables-1.10.21/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'datatables-1.10.21/js/dataTables.bootstrap4.min.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'datatables-1.10.21/css/dataTables.bootstrap4.min.css' %}">
+    <link rel="stylesheet" type="text/css"
+          href="{% static 'jQuery-contextMenu-2.7.1/dist/jquery.contextMenu.min.css' %}">
+
+    <script src="{% static 'jQuery-contextMenu-2.7.1/dist/jquery.contextMenu.min.js' %}"></script>
+    <script src="{% static 'jQuery-contextMenu-2.7.1/dist/jquery.ui.position.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static 'custom/css/separator.css' %}">
+
+    <style>
+        th, td {
+            text-align: center;
+
+        }
+    </style>
+    <div id="display-success"></div>
+    <div id="display-error"></div>
+    <div class="row">
+
+        <div class="col-md-4 content-left">
+
+            <div class="row">
+                <div id="tree" class="col-md-12" style="padding-right: 0px;padding-left: 12px;">
+                    <ul id="treeData" style="display: none;">
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-md-8" style="padding-left: 2px">
+            <div class="row">
+                <div class="col-md-4 border-right">
+                    <h1 class="h3 mb-6 font-weight-normal">Project</h1>
+                    <div class="row">
+                        <div class="col-md-12">
+
+                            <b>Name : </b> <label id="label_name_project"> None</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <b>Restricted : </b> <label id="label_restricted_project">None</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <h1 class="h3 mb-6 font-weight-normal">File</h1>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <b>Hash : </b> <label id="label_hash_file">None</label>
+
+                        </div>
+                        <div class="col-md-6">
+                            <b>File : </b> <label id="label_name_file">None</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <b>Type : </b> <label id="label_type_file">None</label>
+
+                        </div>
+                        <div class="col-md-6">
+                            <b>Date : </b> <label id="label_date_file">None</label>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+            <hr/>
+            <div class="row">
+                <div class="col-md-12">
+                    <h3 class="h3 mb-12 font-weight-normal">Database</h3>
+                    <table id="databases-table" class="table table-striped table-bordered" style="width:100%">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Date</th>
+                            <th>Tick</th>
+                            <th>Comment</th>
+                            <th>More</th>
+                            <th>Used</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+
+
+                </div>
+
+            </div>
+            <hr/>
+
+
+            <div class="row">
+                <div class="col-md-12">
+                    <h3>Users</h3>
+                    <button id="remove_user" disabled>Remove all</button>
+                    <table id="user-table" class="table table-striped table-bordered" style="width:100%">
+
+                        <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>role</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>{{ user.username }}</td>
+                                <td><select>
+                                    <option selected="selected">None</option>
+                                </select></td>
+                            </tr>
+                        {% endfor %}
+
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    {% csrf_token %}
+    <script>
+
+        const schemeWs = (location.protocol == 'https:') ? 'wss://' : 'ws://';
+        const commentSocket = new WebSocket(
+            schemeWs
+            + window.location.host
+            + '/ws/comment/'
+        );
+
+        commentSocket.onmessage = function (e) {
+            data = JSON.parse(e.data);
+            id_database = data.id;
+            comment = data.message;
+            $('#' + id_database + ".comment").val(comment);
+        }
+        commentSocket.onclose = function (e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        $('#databases-table').on('keyup', 'input.comment', function (e) {
+            var self = this;
+            var id = this.id;
+            const content = this.value;
+            const message = content;
+            commentSocket.send(JSON.stringify({
+                'message': message,
+                'id': id
+            }));
+        });
+        getRoles();
+
+
+        function _svg(className, addClass) {
+            var id = className.replace(/ /g, "-");
+            cn = addClass ? " " + addClass : "";
+            html = '<svg class="svg-inline--fa fa-w-20' + cn + '"><use xlink:href="#' + id + '"></use></svg>'
+            return {html: html}
+        }
+
+        $("#tree").fancytree({
+            extensions: ['edit', "filter", "glyph"],
+            icon: function (event, data) {
+                //optional
+            },
+            edit: {
+                adjustWidthOfs: 4,   // null: don't adjust input size to content
+                inputCss: {minWidth: "3em"},
+                triggerStart: ["dblclick"],
+                beforeEdit: function (event, data) {
+                    if (data.node.data.role == "Reader") {
+                        return false;
+                    }
+                    return true
+                },   // Return false to prevent edit mode
+                edit: $.noop,         // Editor was opened (available as data.input)
+                beforeClose: $.noop,  // Return false to prevent cancel/save (data.input is available)
+                save: function (event, data) {
+                    var node = data.node;
+                    var form_data = new FormData(); //Encode form elements for submission
+                    var entity_node = $(this).attr('type');
+                    form_data.append('name', data.input.val());
+                    form_data.append('id', node.data.id);
+                    form_data.append('type', entity_node);
+                    var role = node.data.role;
+                    $.ajax({
+                        type: "post",
+                        url: "/ajax/project/rename/",
+                        data: form_data,
+                        contentType: false,
+                        cache: false,
+                        processData: false,
+                        success: function (data) {
+                            if (data == "ok") {
+                                $('#display-success').text("Success to rename");
+                                $('#display-success').fadeIn().delay(3000).fadeOut();
+
+                            } else {
+                                $('#display-error').text(data);
+                                $('#display-error').fadeIn().delay(3000).fadeOut();
+
+                            }
+                            var $span = $(node.span);
+                            $span.find("> span.fancytree-title").attr('type', entity_node);
+                            $span.find("> span.fancytree-title").addClass(node.data.role);
+                        }
+
+                    })
+
+                },
+
+                close: function (event, data) {
+                    var node = data.node;
+                    var $span = $(node.span);
+                    $span.find("> span.fancytree-title").attr('id_entity', node.data.id);
+                    $span.find("> span.fancytree-title").addClass(node.type);
+                },
+                // Editor was removed
+            },
+            imagePath: "/static/",
+            source: {
+                method: "get",
+                url: ' {% url "list_tree" %}',
+                cache: false
+
+            },
+            callback: function (itemKey, opt) {
+                var node = $.ui.fancytree.getNode(opt.$trigger);
+
+            },
+
+            renderNode: function (event, data) {
+                var node = data.node;
+                var $span = $(node.span);
+                if (node.type === 'project') {
+                    if (node.data.role === 'Manager') {
+                        node.icon = "{% static 'icons/manager.png' %}";
+                        node.renderTitle();
+                        $span.find("img").attr('src', "{% static 'icons/manager.png' %}");
+                    } else if (node.data.role === 'Reader') {
+                        node.icon = "{% static 'icons/reader.png' %}";
+                        node.renderTitle();
+                    } else if (node.data.role === 'Analyst') {
+                        node.icon = "{% static 'icons/analyst.png' %}";
+                        $span.find("img").attr('src', "{% static 'icons/analyst.png' %}");
+                        node.renderTitle();
+                    }
+                }
+                $span.find("> span.fancytree-title").attr('id_entity', node.data.id);
+                $span.find("> span.fancytree-title").attr('type', node.type);
+                $span.find("> span.fancytree-title").addClass(node.type);
+                $span.find("> span.fancytree-title").addClass(node.data.role);
+                //If empty data we add custom class for contextMenu
+                if (data.node.title == 'No data.') {
+                    $span.find("> span.fancytree-title").addClass("nodata");
+                }
+
+            },
+
+            click: function (event, data) {
+                var node = data.node;
+                window.type = node.type;
+                window.id = node.key;
+                var emptyData = "None";
+                window.project_selected = node.data.id;
+                if (node.type == 'project') {
+                    $('#label_name_project').text(node.data.name);
+                    $('#label_restricted_project').text(node.data.restricted);
+                    //Remove data about file and database
+                    $('#label_name_file').text(emptyData);
+                    $('#label_date_file').text(emptyData);
+                    $('#label_hash_file').text(emptyData);
+                    $('#label_type_file').text(emptyData);
+                    window.project_node = node;
+                    if (node.data.role === 'Admin' || node.data.role == 'Manager') {
+                        $("#remove_user").attr("disabled", false);
+                    } else {
+                        $("#remove_user").attr("disabled", true);
+                    }
+                    $.ajax({
+                        type: "get",
+                        url: "/ajax/list_user/" + node.type + "/" + node.data.id,
+                        success: function (data) {
+                            //clear table
+                            window.user_table.rows().remove().draw(true);
+                            $.each(data, function (i, item) {
+                                var username = item.username;
+                                var user_id = item.id;
+                                var role = item.role;
+                                val = create_option(user_id, username, role);
+                                window.user_table.row.add([username, val.outerHTML]).draw(true);
+
+                            });
+                        }
+                    });
+                }
+                if (node.type == 'file') {
+                    $('#label_name_file').text(node.title);
+                    $('#label_date_file').text(node.data.date);
+                    $('#label_hash_file').text(node.data.hash);
+                    $('#label_type_file').text(node.data.ftype);
+                    var current = node;
+                    while (current.parent.type !== "project") {
+                        current = current.parent;
+                    }
+                    current = current.parent;
+                    window.project_node = current;
+                    if (current.data.role === 'Admin' || current.data.role == 'Manager') {
+                        $("#remove_user").attr("disabled", false);
+                    } else {
+                        $("#remove_user").attr("disabled", true);
+                    }
+                    $.ajax({
+                        type: "GET",
+                        url: "/ajax/list_user/" + current.type + "/" + current.data.id,
+                        success: function (data) {
+                            //clear table
+                            window.user_table.rows().remove().draw(false);
+                            $.each(data, function (i, item) {
+                                var username = item.username;
+                                var user_id = item.id;
+                                var role = item.role;
+                                val = create_option(user_id, username, role);
+                                window.user_table.row.add([username, val.outerHTML]).draw(true);
+
+                            });
+                        }
+                    });
+                }
+
+                if (node.type == 'folder') {
+                    window.database_table.rows().remove().draw(true);
+                    $('#label_name_file').text(emptyData);
+                    $('#label_date_file').text(emptyData);
+                    $('#label_hash_file').text(emptyData);
+                    $('#label_type_file').text(emptyData);
+                    var current = node;
+                    while (current.parent.type !== "project") {
+                        current = current.parent;
+                    }
+                    current = current.parent;
+                    window.project_node = current;
+                    if (current.data.role === 'Admin' || current.data.role == 'Manager') {
+                        //disable a normal button
+                        $("#remove_user").attr("disabled", false);
+                    } else {
+                        $("#remove_user").attr("disabled", true);
+                    }
+                    $.ajax({
+                        type: "GET",
+                        url: "/ajax/list_user/" + current.type + "/" + current.data.id,
+                        success: function (data) {
+                            //clear table
+                            window.user_table.rows().remove().draw(false);
+
+                            $.each(data, function (i, item) {
+                                var username = item.username;
+                                var user_id = item.id;
+                                var role = item.role;
+                                val = create_option(user_id, username, role);
+                                window.user_table.row.add([username, val.outerHTML]).draw(true);
+
+                            });
+                        }
+                    });
+                }
+
+
+                //Look if databases in file
+                if (node.type == 'file') {
+                    $.ajax({
+                        type: "get",
+                        url: "/ajax/file/database/" + node.data.id,
+                        success: function (data) {
+                            window.database_table.rows().remove().draw(true);
+                            $.each(data, function (i, item) {
+                                var name = item.name;
+                                var date = item.date;
+                                var tick = item.tick;
+                                var can_write = item.can_write;
+                                if (item.used) {
+                                    var used = "<img src='{%  static 'favicon/circle-48.png' %}' >"
+                                } else {
+                                    var used = "<img src='{%  static 'favicon/circle-48-black.png' %}' >"
+                                }
+                                if (can_write) {
+                                    var comment = "<input id='" + item.id + "'  class='comment' type='text' value='" + item.comment + "'>";
+                                } else {
+                                    var comment = "<input id='" + item.id + "' disabled class='comment' type='text' value='" + item.comment + "'>";
+
+                                }
+                                var url_target = "{% url "database_index" 1%}";
+                                url_target = url_target.replace('1', item.id);
+                                var more = "<a href=" + url_target + " target='_blank'>" +
+                                    "<svg width=\"1em\" height=\"1em\" viewBox=\"0 0 16 16\" class=\"bi bi-search\" fill=\"currentColor\" xmlns=\"http://www.w3.org/2000/svg\">\n" +
+                                    "  <path fill-rule=\"evenodd\" d=\"M10.442 10.442a1 1 0 0 1 1.415 0l3.85 3.85a1 1 0 0 1-1.414 1.415l-3.85-3.85a1 1 0 0 1 0-1.415z\"/>\n" +
+                                    "  <path fill-rule=\"evenodd\" d=\"M6.5 12a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM13 6.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z\"/>\n" +
+                                    "</svg>" +
+                                    "</a>";
+                                val = create_database_row(name, date, tick)
+                                console.log("used is " + used)
+                                window.database_table.row.add([name, date, tick, comment, more, used]).draw(false)
+                            });
+                            $('#label_date_database').text(node.data.date);
+                            $('#label_tick_database').text(node.data.tick);
+                            $('#label_name_database').text(node.title);
+                        }
+                    });
+                }
+            }
+        });
+
+        function create_database_row(name, date, tick) {
+            var row_item = document.createElement("tr");
+            var name_cell = document.createElement('td');
+            name_cell.append(document.createTextNode(name))
+            var date_cell = document.createElement('td');
+            date_cell.append(document.createTextNode(name))
+            var tick_cell = document.createElement('td');
+            tick_cell.append(document.createTextNode(tick))
+
+
+            row_item.append(name_cell);
+            row_item.append(date_cell);
+            row_item.append(tick_cell);
+            return row_item;
+        }
+
+        function create_option(user_id, username, role_selected) {
+            var select_item = document.createElement("select");
+            select_item.setAttribute('user_id', user_id);
+            select_item.setAttribute('onChange', 'updateRole(this)');
+            for (const property in window.role) {
+                var value = window.role[property];
+
+                option = document.createElement('option');
+                if (value == role_selected) {
+                    option.setAttribute('selected', 'selected')
+
+                }
+                option.append(document.createTextNode(value));
+
+                select_item.append(option);
+            }
+            if (role_selected == 'Admin') {
+                select_item.setAttribute('disabled', 'disabled');
+            }
+
+            return select_item;
+
+        }
+
+        function updateRole(item) {
+            var user_id = item.getAttribute('user_id');
+            var role = $(item).children("option:selected").val();
+            var project_id = window.project_selected;
+            var form_data = new FormData(); //Encode form elements for submission
+            form_data.append('role', role);
+            form_data.append('user_id', user_id);
+            form_data.append('project_id', project_id);
+            $.ajax({
+                type: "post",
+                url: ' {% url "set_user_role" %}',
+                data: form_data,
+                contentType: false,
+                cache: false,
+                processData: false,
+
+            })
+        }
+
+        function getPosition(string, subString, index) {
+            return string.split(subString, index).join(subString).length;
+        }
+
+        $(function () {
+            $.contextMenu({
+                selector: '.file.Admin, .file.Manager ',
+                items: {
+                    'Delete': {
+                        name: "Delete",
+                        callback: function (itemKey, opt, e) {
+                            var id_entity = $(this).attr("id_entity");
+                            var type_entity = $(this).attr('type');
+
+                            var form_data = new FormData(); //Encode form elements for submission
+                            form_data.append("id_entity", id_entity);
+                            form_data.append("type_entity", type_entity);
+                            $.ajax({
+                                type: "post",
+                                url: ' {% url "remove" %}',
+                                data: form_data,
+                                contentType: false,
+                                cache: false,
+                                processData: false,
+                                success: function (data) {
+                                    if (data == "ok") {
+                                        var tree = $.ui.fancytree.getTree("#tree");
+                                        var node = tree.findFirst(function (node) {
+                                            return node.data.id == id_entity && node.type == 'file';
+                                        });
+                                        node.remove();
+
+                                        $('#display-success').text("Success to delete file");
+                                        $('#display-success').fadeIn().delay(3000).fadeOut();
+
+                                    } else {
+
+                                        $('#display-error').text(data.error);
+                                        $('#display-error').fadeIn().delay(3000).fadeOut();
+
+                                    }
+
+                                }
+                            })
+                        }
+                    }
+                }
+            });
+        });
+
+        $(function () {
+            $.contextMenu({
+                selector: '.nodata ',
+                items: {
+                    'create_project': {
+                        name: "Create project",
+                        callback: function (key, opt, e) {
+                            var form_data = new FormData(); //Encode form elements for submission
+                            form_data.append("action", key);
+                            $.ajax({
+                                url: ' {% url "management_project_ajax" %}',
+                                type: "post",
+                                data: form_data,
+                                contentType: false,
+                                cache: false,
+                                processData: false,
+                                success: function (data) {
+                                    if (data.error) {
+
+                                        $('#display-error').text(data.error);
+                                        $('#display-error').fadeIn().delay(3000).fadeOut();
+                                    } else {
+                                        var id_project = data.id;
+                                        var name = data.name;
+                                        var restricted = data.resitricted;
+
+                                        var rootNode = $.ui.fancytree.getTree("#tree").getRootNode();
+                                        var childNode = rootNode.addChildren({
+                                            title: "None",
+                                            type: 'project',
+                                            folder: true,
+                                            id: id_project,
+                                            restricted: restricted,
+                                        });
+
+                                        $(childNode.span).click();
+                                        $(childNode.span).dblclick();
+
+                                    }
+                                }
+                            })
+
+                        }
+                    },
+
+                    'create_project_restricted': {
+                        name: "Create project restricted",
+                        callback: function (key, opt, e) {
+                            var form_data = new FormData(); //Encode form elements for submission
+                            form_data.append("action", key);
+                            $.ajax({
+                                url: ' {% url "management_project_ajax" %}',
+                                type: "post",
+                                data: form_data,
+                                contentType: false,
+                                cache: false,
+                                processData: false,
+                                success: function (data) {
+                                    if (data.error) {
+
+                                        $('#display-error').text(data.error);
+                                        $('#display-error').fadeIn().delay(3000).fadeOut();
+                                    } else {
+                                        var id_project = data.id;
+                                        var name = data.name;
+                                        var restricted = data.resitricted;
+
+                                        var rootNode = $.ui.fancytree.getTree("#tree").getRootNode();
+                                        var childNode = rootNode.addChildren({
+                                            title: "None",
+                                            type: 'project',
+                                            folder: true,
+                                            id: id_project,
+                                            restricted: restricted,
+                                        });
+
+                                        $(childNode.span).click();
+                                        $(childNode.span).dblclick();
+
+                                    }
+                                }
+                            })
+
+                        }
+                    }
+                }
+            })
+        })
+
+        $(function () {
+            $.contextMenu({
+                selector: '.project.Reader, .folder.Reader ',
+                callback: function (key, options) {
+                    var type_permission;
+                    var id_entity = $(this).attr("type_id");
+                    var type_entity = $(this).attr('type');
+                    var value;
+                    var form_data = new FormData(); //Encode form elements for submission
+                    form_data.append('csrftoken', jQuery("[name=csrfmiddlewaretoken]").val());
+                    form_data.append("action", key);
+
+
+                    $.ajax({
+                        url: "/ajax/management/project/",
+                        type: "post",
+                        data: form_data,
+                        contentType: false,
+                        cache: false,
+                        processData: false,
+
+                    }).done(function (data) {
+                        var id_project = data.id;
+                        var name = data.name;
+                        var restricted = data.resitricted;
+
+                        var rootNode = $.ui.fancytree.getTree("#tree").getRootNode();
+                        var childNode = rootNode.addChildren({
+                            title: "None",
+                            type: 'project',
+                            folder: true,
+                            id: id_project,
+                            restricted: restricted,
+                        });
+
+                        $(childNode.span).click();
+                        $(childNode.span).dblclick();
+
+                    });
+
+                },
+                items: {
+                    "create": {
+                        name: "Create Project",
+                        items: {
+                            "create_project": {name: "project"},
+                            "create_project_restricted": {name: "project restricted"},
+
+                        }
+                    }
+                }
+            })
+        });
+
+
+        $(function () {
+            $.contextMenu({
+                selector: '.project.Admin,.project.Manager, .folder.Manager, .folder.Admin',
+                callback: function (key, options) {
+                    var type_permission;
+                    var id_entity = $(this).attr("type_id");
+                    var type_entity = $(this).attr('type');
+                    var value;
+                    var form_data = new FormData(); //Encode form elements for submission
+                    form_data.append('csrftoken', jQuery("[name=csrfmiddlewaretoken]").val());
+                    form_data.append("action", key);
+
+
+                    $.ajax({
+                        url: "/ajax/management/project/",
+                        type: "post",
+                        data: form_data,
+                        contentType: false,
+                        cache: false,
+                        processData: false,
+
+                    }).done(function (data) {
+                        var id_project = data.id;
+                        var name = data.name;
+                        var restricted = data.resitricted;
+
+                        var rootNode = $.ui.fancytree.getTree("#tree").getRootNode();
+                        var childNode = rootNode.addChildren({
+                            title: "None",
+                            type: 'project',
+                            folder: true,
+                            id: id_project,
+                            restricted: restricted,
+                        });
+                        childNode.icon = "{% static 'icons/manager.png' %}";
+                        childNode.renderTitle();
+                        $(childNode.span).click();
+                        $(childNode.span).dblclick();
+
+                    });
+
+                },
+
+                items: {
+                    "create": {
+                        name: "Create Project",
+                        items: {
+                            "create_project": {name: "project"},
+                            "create_project_restricted": {name: "project restricted"},
+
+                        }
+                    },
+                    'Create folder': {
+                        name: "Create Folder",
+                        callback: function (itemKey, opt, e) {
+                            // Alert the key of the item and the trigger element's id.
+                            var id_entity = $(this).attr("id_entity");
+                            var type_node = $(this).attr("type");
+                            var form_data = new FormData(); //Encode form elements for submission
+                            form_data.append("id_entity", id_entity);
+                            form_data.append("parent_type", type_node);
+                            $.ajax({
+                                type: "post",
+                                url: ' {% url "create_folder" %}',
+                                data: form_data,
+                                contentType: false,
+                                cache: false,
+                                processData: false,
+                                success: function (data) {
+                                    if (data.error) {
+
+                                        $('#display-error').text(data.error);
+                                        $('#display-error').fadeIn().delay(3000).fadeOut();
+                                    } else {
+                                        var tree = $.ui.fancytree.getTree("#tree");
+                                        var node = tree.findFirst(function (node) {
+                                            return node.data.id == id_entity & node.type == type_node;
+                                        });
+                                        var childNode = node.addChildren({
+                                            title: "None",
+                                            type: 'folder',
+                                            folder: true,
+                                            id: data.id,
+
+                                        });
+
+
+                                        $(childNode.span).click();
+                                        $(childNode.span).dblclick();
+                                    }
+                                }
+                            })
+                        }
+                    },
+
+                    'Create File': {
+                        name: "Create File",
+                        callback: function (itemKey, opt, e) {
+                            // Alert the key of the item and the trigger element's id.
+                            var id_entity = $(this).attr("id_entity");
+                            var type_node = $(this).attr("type");
+                            var form_data = new FormData(); //Encode form elements for submission
+                            form_data.append("id_entity", id_entity);
+                            form_data.append("type", type_node);
+                            $.ajax({
+                                type: "post",
+                                url: ' {% url "create_file" %}',
+                                data: form_data,
+                                contentType: false,
+                                cache: false,
+                                processData: false,
+                                success: function (data) {
+                                    if (data.error) {
+
+                                        $('#display-error').text(data.error);
+                                        $('#display-error').fadeIn().delay(3000).fadeOut();
+                                    } else {
+                                        var tree = $.ui.fancytree.getTree("#tree");
+                                        var node = tree.findFirst(function (node) {
+                                            return node.data.id == id_entity & node.type == type_node;
+                                        });
+                                        //node.toggleExpanded();
+                                        var childNode = node.addChildren({
+                                            title: "None",
+                                            type: 'file',
+                                            folder: false,
+                                            id: data.id,
+
+                                        });
+                                        //node.toggleExpanded();
+                                        if (!node.isExpanded()) {
+                                            node.toggleExpanded();
+                                        }
+                                        $(childNode.span).click();
+                                        $(childNode.span).dblclick();
+                                    }
+                                }
+                            });
+
+                        }
+                    },
+
+                    'Delete': {
+                        name: "Delete",
+                        callback: function (itemKey, opt, e) {
+                            var id_entity = $(this).attr("id_entity");
+                            var type_node = $(this).attr("type");
+
+                            var form_data = new FormData(); //Encode form elements for submission
+                            form_data.append("id_entity", id_entity);
+                            form_data.append("type_entity", type_node)
+                            $.ajax({
+                                    type: "post",
+                                    url: ' {% url "remove" %}',
+                                    data: form_data,
+                                    contentType: false,
+                                    cache: false,
+                                    processData: false,
+                                    success: function (data) {
+                                        if (data == "ok") {
+                                            var tree = $.ui.fancytree.getTree("#tree");
+                                            var node = tree.findFirst(function (node) {
+                                                return node.data.id == id_entity && node.type == type_node;
+                                            });
+                                            node.remove();
+
+                                            $('#display-success').text("Success to delete " + type_node);
+                                            $('#display-success').fadeIn().delay(3000).fadeOut();
+
+                                        } else {
+
+                                            $('#display-error').text(data.error);
+                                            $('#display-error').fadeIn().delay(3000).fadeOut();
+
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    },
+
+                }
+            });
+
+
+        });
+
+        $(function () {
+            $.contextMenu({
+                selector: '.project.Analyst, .folder.Analyst',
+                callback: function (key, options) {
+                    var type_permission;
+                    var id_entity = $(this).attr("type_id");
+                    var type_entity = $(this).attr('type');
+                    var value;
+                    var form_data = new FormData(); //Encode form elements for submission
+                    form_data.append('csrftoken', jQuery("[name=csrfmiddlewaretoken]").val());
+                    form_data.append("action", key);
+
+
+                    $.ajax({
+                        url: "/ajax/management/project/",
+                        type: "post",
+                        data: form_data,
+                        contentType: false,
+                        cache: false,
+                        processData: false,
+
+                    }).done(function (data) {
+                        var id_project = data.id;
+                        var name = data.name;
+                        var restricted = data.resitricted;
+
+                        var rootNode = $.ui.fancytree.getTree("#tree").getRootNode();
+                        var childNode = rootNode.addChildren({
+                            title: "None",
+                            type: 'project',
+                            folder: true,
+                            id: id_project,
+                            restricted: restricted,
+                        });
+
+                        $(childNode.span).click();
+                        $(childNode.span).dblclick();
+
+                    });
+
+                },
+
+                items: {
+                    "create": {
+                        name: "Create Project",
+                        items: {
+                            "create_project": {name: "project"},
+                            "create_project_restricted": {name: "project restricted"},
+
+                        }
+                    },
+                    'Create folder': {
+                        name: "Create Folder",
+                        callback: function (itemKey, opt, e) {
+                            // Alert the key of the item and the trigger element's id.
+                            var id_entity = $(this).attr("id_entity");
+                            var type_node = $(this).attr("type");
+                            var form_data = new FormData(); //Encode form elements for submission
+                            form_data.append("id_entity", id_entity);
+                            form_data.append("parent_type", type_node);
+                            $.ajax({
+                                type: "post",
+                                url: ' {% url "create_folder" %}',
+                                data: form_data,
+                                contentType: false,
+                                cache: false,
+                                processData: false,
+                                success: function (data) {
+                                    if (data.error) {
+
+                                        $('#display-error').text(data.error);
+                                        $('#display-error').fadeIn().delay(3000).fadeOut();
+                                    } else {
+                                        var tree = $.ui.fancytree.getTree("#tree");
+                                        var node = tree.findFirst(function (node) {
+                                            return node.data.id == id_entity & node.type == type_node;
+                                        });
+                                        var childNode = node.addChildren({
+                                            title: "None",
+                                            type: 'folder',
+                                            folder: true,
+                                            id: data.id,
+
+                                        });
+
+
+                                        $(childNode.span).click();
+                                        $(childNode.span).dblclick();
+                                    }
+                                }
+                            })
+                        }
+                    },
+
+                    'Create File': {
+                        name: "Create File",
+                        callback: function (itemKey, opt, e) {
+                            // Alert the key of the item and the trigger element's id.
+                            var id_entity = $(this).attr("id_entity");
+                            var type_node = $(this).attr("type");
+                            var form_data = new FormData(); //Encode form elements for submission
+                            form_data.append("id_entity", id_entity);
+                            form_data.append("type", type_node);
+                            $.ajax({
+                                type: "post",
+                                url: ' {% url "create_file" %}',
+                                data: form_data,
+                                contentType: false,
+                                cache: false,
+                                processData: false,
+                                success: function (data) {
+                                    if (data.error) {
+
+                                        $('#display-error').text(data.error);
+                                        $('#display-error').fadeIn().delay(3000).fadeOut();
+                                    } else {
+                                        var tree = $.ui.fancytree.getTree("#tree");
+                                        var node = tree.findFirst(function (node) {
+                                            return node.data.id == id_entity & node.type == type_node;
+                                        });
+                                        //node.toggleExpanded();
+                                        var childNode = node.addChildren({
+                                            title: "None",
+                                            type: 'file',
+                                            folder: false,
+                                            id: data.id,
+
+                                        });
+                                        //node.toggleExpanded();
+                                        if (!node.isExpanded()) {
+                                            node.toggleExpanded();
+                                        }
+                                        $(childNode.span).click();
+                                        $(childNode.span).dblclick();
+                                    }
+                                }
+                            });
+
+                        }
+                    },
+
+                }
+            });
+
+
+        });
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+
+        $.ajaxSetup({
+            beforeSend: function (xhr, settings) {
+                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", jQuery("[name=csrfmiddlewaretoken]").val());
+                }
+            }
+        });
+
+        $(document).ready(function () {
+            window.user_table = $('#user-table').DataTable({
+                'pageLength': 4,
+                'lengthChange': false,
+                'drawCallback': function () {
+                    var api = this.api();
+                    var size_empty = $('.odd').height();
+                    var rowCount = api.rows({page: 'current'}).rows().count();
+                    for (var i = 0; i < api.page.len() - (rowCount === 0 ? 1 : rowCount); i++) {
+                        $('#user-table tbody').append($('<tr style="height:' + size_empty + 'px;" class="odd">' +
+                            '<td class="dataTables_empty" colspan="5" valign="top"></td>'))
+                    }
+                }
+            });
+
+
+        });
+        $(document).ready(function () {
+            window.database_table = $('#databases-table').DataTable({
+                'pageLength': 4,
+                'lengthChange': false,
+                fixedColumns: {
+                    heightMatch: 'semiauto'
+                },
+                responsive: true,
+                'drawCallback': function () {
+                    var api = this.api();
+                    var rowCount = api.rows({page: 'current'}).rows().count();
+                    for (var i = 0; i < api.page.len() - (rowCount === 0 ? 1 : rowCount); i++) {
+                        var size_empty = $('.odd').height();
+                        $('#databases-table tbody').append($('<tr style="height:' + size_empty + 'px;" class="odd">' +
+                            '<td class="dataTables_empty" colspan="6" valign="top"></td>'))
+                    }
+
+                }
+
+            })
+            //fix row size for database table
+            $('#databases-table').on("draw.dt", function () {
+                var api = $('#databases-table').dataTable().api();
+                var rowCount = api.rows({page: 'current'}).rows().count();
+                var xxxx = $('#databases-table tbody tr').length;
+                for (var i = 0; i < api.page.len() - xxxx; i++) {
+                    var size_empty = $('.odd').height();
+                    // $('#databases-table tbody').append($('<tr style="height:' + size_empty + 'px;" class="odd">' + '<td class="dataTables_empty" colspan="5" valign="top"></td>'))
+                }
+            });
+        });
+
+        $("#remove_user").click(function () {
+            var node = window.project_node;
+            var form_data = new FormData(); //Encode form elements for submission
+            form_data.append('project_id', node.data.id);
+            $.ajax({
+                type: "post",
+                url: "/ajax/project/remove_all_users/",
+                data: form_data,
+                contentType: false,
+                cache: false,
+                processData: false,
+                success: function (data) {
+                    if (data == "Ok") {
+                        $.ajax({
+                            type: "get",
+                            url: "/ajax/list_user/" + node.type + "/" + node.data.id,
+                            success: function (data) {
+                                //clear table
+                                window.user_table.rows().remove().draw(true);
+                                $.each(data, function (i, item) {
+                                    var username = item.username;
+                                    var user_id = item.id;
+                                    var role = item.role;
+                                    val = create_option(user_id, username, role);
+
+                                    window.user_table.row.add([username, role, val]).draw(false);
+
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+
+        })
+
+        $(document).ready(getRoles); // called on page load
+
+        function getRoles() {
+            $.get(' {% url "get_roles" %}', function (data) {
+                window.role = data;
+                $
+            })
+        };
+        //fix row size for user table
+        $('#user-table').on("draw.dt", function () {
+            var api = $('#user-table').dataTable().api();
+            var rowCount = api.rows({page: 'current'}).rows().count();
+            var xxxx = $('#user-table tbody tr').length;
+            for (var i = 0; i < api.page.len() - xxxx; i++) {
+                var size_empty = $('.odd').height();
+                $('#user-table tbmodelody').append($('<tr style="height:' + size_empty + 'px;" class="odd">' + '<td class="dataTables_empty" colspan="5" valign="top"></td>'))
+            }
+        })
+
+
+    </script>
+
+{% endblock %}
