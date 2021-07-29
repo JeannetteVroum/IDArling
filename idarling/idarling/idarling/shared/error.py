@@ -12,6 +12,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from enum import Enum
+from PyQt5.QtWidgets import QMessageBox
 
 
 class Error(Enum):
@@ -39,7 +40,6 @@ class Error(Enum):
             _, member = d.split('.')
             return getattr(Error, member)
 
-from PyQt5.QtWidgets import QMessageBox
 
 
 class ErrorMessage(QMessageBox):

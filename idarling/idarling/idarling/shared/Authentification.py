@@ -46,11 +46,11 @@ class Authentification():
 
 
     def authenticate_ldap(self, username: str, password: str) -> bool:
-        username, search_base = utils.searchDc(username)
-        user_base = "cn=%s,%s" % (username,self.base_dn)
+        _, search_base = utils.searchDc(username)
+        user_base =  self.base_dn % username
         connection = Connection(self.server, user_base, password)
         try:
-            self._logger.info(f"Base_dn {user_base} try to authenticate")
+            self._logger.info(f"Base_dn {username} try to authenticate")
             if not connection.bind():
                 self._logger.warning("Connection refused for {} , reason : {}".format(username, connection.result))
                 return error.Error.BAD_CREDENTIALS

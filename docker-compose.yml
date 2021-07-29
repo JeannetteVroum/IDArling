@@ -31,7 +31,6 @@ services:
     restart: always
     volumes:
       - static_volume:/srv/IDArling_Management/IDArling_Management/static/
-      #- C:\Users\user\Documents\IDArling\IDArling_source_code\idarling_management\idarling_management:/srv/IDArling_Management/
     depends_on:
       - db
   idarling:
@@ -46,7 +45,7 @@ services:
     volumes:
     - ./data/idb_volumes:/opt/app/idarling/files #Dossier contenant les IDBs
   db:
-    image: postgres:12.0-alpine
+    image: postgres:12.3
     volumes:
      - ./data/postgres/postgres-data:/var/lib/postgresql/data
     environment:

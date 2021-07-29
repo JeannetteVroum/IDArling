@@ -23,11 +23,10 @@ WORKDIR ${IDARLING_PATH}
 COPY . ${IDARLING_PATH}
 
 #On modifie l'owner par l'utilisateur crée plus haut
-RUN chown -R $USER:$USER ${IDARLING_PATH}
+#RUN chown -R $USER:$USER ${IDARLING_PATH}
 
-USER $USER
+#USER $USER
 
-RUN pip install pydevd-pycharm~=211.7142.13
 #Installation des librairies pythons
 RUN python -m pip install --upgrade pip
 RUN pip install -r requirements.txt
