@@ -25,7 +25,7 @@ services:
     entrypoint: [ "/entrypoint.sh" ]
     command: [ "nginx", "-g", "daemon off;" ]
   idarling_web:
-    image: idarling_management
+    image: jeannetteblini/idarling_management
     env_file:
       - ./prod.env #Fichier contenant les différentes variables d'environnement
     restart: always
@@ -34,7 +34,7 @@ services:
     depends_on:
       - db
   idarling:
-    image: idarling
+    image: jeannetteblini/idarling
     ports:
       - '1234:1234' #Port d'écoute du serveur IDArling
     env_file:
