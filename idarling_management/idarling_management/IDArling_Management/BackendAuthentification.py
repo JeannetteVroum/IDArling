@@ -28,11 +28,8 @@ logger = logging.getLogger(__name__)
 class BackendAuthentification(ModelBackend):
 
     def getUserByEmailOrUsername(authentification_parameter):
-        logger.info(f"getUserByEmailOrUsername with input : {authentification_parameter}")
         try:
             if "@" in authentification_parameter:
-                logger.info(f"Test avec le @ ")
-                logger.info(f"Test avec le @ qui donne  input : {User.objects.get(email=authentification_parameter)}")
                 return User.objects.get(email=authentification_parameter)
             else:
                 return User.objects.get(username=authentification_parameter)
@@ -44,15 +41,9 @@ class BackendAuthentification(ModelBackend):
         LDAP_URL = "ldap://%s:%s" % (settings.LDAP["URL"], settings.LDAP["PORT"])
         if '@' in username:
             _, search_base = UtilsData.searchDc(username)
-        print(f"authenticate_ldap server address :  {LDAP_URL}")
         server = Server(LDAP_URL, get_info=ALL)
-        print(f"settings_ldap is {settings.LDAP['BASE_DN']}")
-
-        user_base =settings.LDAP["BASE_DN"] % username# % (username, settings.LDAP["BASE_DN"])
         # OU userPrincipalName
-        print(f"user_base is {user_base}")
-        print(f" enter is {username}")
-        connection = Connection(server, user=username, password=password)
+        connection = Connection(server, user=username, password=password, auto_bind=True)
         if not connection.bind():
             logging.info("Connection refused for {} , reason : {}".format(username, connection.result))
             return False
@@ -87,6 +78,7 @@ class BackendAuthentification(ModelBackend):
         user_wanted_to_connect: User = BackendAuthentification.getUserByEmailOrUsername(
             authentification_parameter=username)
         logger.info(f"User {username}  exist ? {user_wanted_to_connect}")
+        logger.info(f"Password is {password}")
         # If user is already register
         if user_wanted_to_connect is not None:
             # ldap account and authentification by ldap is allowed

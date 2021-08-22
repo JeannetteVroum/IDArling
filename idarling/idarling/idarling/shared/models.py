@@ -112,13 +112,19 @@ class User(Base):
 
     @staticmethod
     def can_read_database(session, user, project, id_database):
-        database = session.query(Database).get(id_database)
         affected = session.query(Affected).filter(Affected.user == user).filter(
             Affected.projects == project).first()
         if affected.role not in (Affected.Role.Analyst, Affected.Role.Manager, Affected.Role.Reader):
             return False
         return True
 
+    @staticmethod
+    def set_create_default_permissions(session,user):
+        """Set default permissions when user is created"""
+        projects = session.query(Project).filter(Project.restricted == False)
+        for project in projects:
+                session.add(Affected.objects.create(projects=project, user=user, role=Affected.ROLE.Reader))
+                session.commit()
     @staticmethod
     def can_read_project(session, user, project):
         """

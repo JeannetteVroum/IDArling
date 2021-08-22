@@ -178,6 +178,15 @@ class Storage(object):
         except Exception as e:
             self.logger.debug("Bug is " + str(e))
 
+    def create_user_ldap(self,username,email) -> User:
+        user = User(is_superuser=False,password="None",username=username,email=email,authentificationByPassword=False,ldap_user=True,date_joined=datetime.datetime.now())
+        self.s.add(user)
+        self.s.commit()
+        self.s.close()
+        #register user as reader for all project not restricted
+        User.set_create_default_permissions(self.s,user)
+        return user
+
     def insert_project(self, project: Project, user_current: User) -> Project:
         """Create project"""
         self.s.add(project)

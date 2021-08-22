@@ -40,7 +40,7 @@ class Authentification():
 
         host = os.environ.get("LDAP_HOST", config["LDAP"]["host"])
         port =os.environ.get("LDAP_PORT", config["LDAP"]["port"])
-        self.base_dn = os.environ.get("LDAP_BASE_DN", "None")
+        self.base_dn = os.environ.get("LDAP_BASE_DN", "%s")
         LDAP_URL = "ldap://%s:%s" % (host, port)
         self.server = Server(LDAP_URL, use_ssl=True, get_info=True)
 
@@ -76,23 +76,24 @@ class Authentification():
         self._parent.storage.refresh_session()
         ldap_allowed: bool = self._parent.storage.get_authentification_by_ldap_is_allowed()
         local_account_allowed: bool = self._parent.storage.get_authentification_by_username_password_is_allowed()
-        user_wanted: Optional[User] = self._parent.storage.select_user_by_username(username=username)
+        user_wanted: Optional[User] =self.getUserByEmailOrUsername(username)
+        self._logger.debug(f"user_wanted is {user_wanted}")
         if user_wanted is not None:
             self._logger.debug(f"Attempt to authenticate the user {username}")
             self._logger.debug(f"ldap_user ? : {user_wanted.ldap_user}")
             self._logger.debug(f"authentificationByPassword ? : {user_wanted.authentificationByPassword}")
             if user_wanted.ldap_user and ldap_allowed:
-                return self.authenticate_ldap(username, password)
+                return self.authenticate_ldap(user_wanted.email, password)
             if user_wanted.authentificationByPassword and local_account_allowed:
                 return self.authentication_not_ldap(username, password)
-        elif ldap_allowed and user_wanted is not None:
+        elif ldap_allowed:
             # check if user exist in LDAP server
             retour = self.authenticate_ldap(username, password)
+            self._logger.debug(f"retour est {retour}")
             if not (isinstance(retour, error.Error)):
                 self.create_ldap_account(username, password)
+
                 return True
-            else:
-                return retour
         return error.Error.BAD_CREDENTIALS
 
     def constant_time_compare(self, val1, val2):
@@ -112,22 +113,14 @@ class Authentification():
             return self._parent.storage.select_user_by_email(authentification_parameter)
         return self._parent.storage.select_user_by_username(authentification_parameter)
 
-    def create_ldap_account(self, username, password) -> None:
-        is_email = '@' in username
+    def create_ldap_account(self, email, password) -> None:
+        self._logger.debug(f"create ldap account")
+        is_email = '@' in email
         if is_email:
-            username, search_base = utils.searchDc(username)
-            connection = Connection(self.server, username, password)
-            connection.bind()
-            connection.search(search_base, '(objectclass=person)', ldap3.SUBTREE,
-                              attributes=['userPrincipalName', 'sAMAccountName'])
-            for entrie in connection.entries:
-                if entrie['sAMAccountName'] == username:
-                    email = entrie['userPrincipalName']
-                    user_without_email = self.getUserByEmailOrUsername(username)
+            user_base = self.base_dn % email
+            connection = Connection(self.server, user_base, password)
+            if connection.bind():
+                    user_without_email, domain_part = email.rsplit('@', 1)
+                    self._logger.debug(f"user_without email {user_without_email}")
                     if user_without_email is not None:
-                        self._parent.storage.update_email(user_without_email, email)
-                        return user_without_email
-                    # create user account
-                    self._parent.storage.register_user_ldap(username=username, email=email)
-        else:
-            self._parent.storage.register_user_ldap(username=username)
+                        return self._parent.storage.create_user_ldap(username=user_without_email,email=email)
