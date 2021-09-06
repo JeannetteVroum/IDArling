@@ -77,8 +77,8 @@ class BackendAuthentification(ModelBackend):
         authentification_ldap_allowed = Settings.objects.first().authentification_ldap
         user_wanted_to_connect: User = BackendAuthentification.getUserByEmailOrUsername(
             authentification_parameter=username)
-        logger.info(f"User {username}  exist ? {user_wanted_to_connect}")
-        logger.info(f"Password is {password}")
+        logger.debug(f"User {username}  exist ? {user_wanted_to_connect}")
+        logger.debug(f"Password is {password}")
         # If user is already register
         if user_wanted_to_connect is not None:
             # ldap account and authentification by ldap is allowed
