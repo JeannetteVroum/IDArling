@@ -17,6 +17,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from ldap3 import Server, Connection, ALL
+from ldap3.core.exceptions import LDAPBindError, LDAPSocketOpenError
 
 from IDArling.models import Settings
 from IDArling_Management.utils.Utils_Data import UtilsData
@@ -42,12 +43,22 @@ class BackendAuthentification(ModelBackend):
         if '@' in username:
             _, search_base = UtilsData.searchDc(username)
         server = Server(LDAP_URL, get_info=ALL)
+        logger.info(f"SERVER :{LDAP_URL}, ")
         # OU userPrincipalName
-        connection = Connection(server, user=username, password=password, auto_bind=True)
-        if not connection.bind():
-            logging.info("Connection refused for {} , reason : {}".format(username, connection.result))
-            return False
-        return True
+        status = False
+        try:
+            connection = Connection(server, user=username, password=password, auto_bind=True)
+            if connection.bind():
+                logging.info("Connection accepted for {}".format(username))
+                status = True
+            else:
+                logging.info("Connection refused for {} , reason : {}".format(username, connection.result))
+        except LDAPBindError:
+            logging.info("Connection refused for {} , reason : LDAP Error, probably wrong credentials".format(username))
+        except LDAPSocketOpenError:
+            logging.info("Connection refused for {} , reason : LDAP Error, Host is unreachable".format(username))
+        finally:
+            return status
 
     def create_ldap_account(email, password):
         username, search_base = UtilsData.searchDc(email)
