@@ -142,8 +142,7 @@ class Painter(QObject):
         if widget.windowTitle() == "Database notepad":
             self._plugin._core.hook_notepad(widget)
             # update notepad content
-            plainTextEdit = widget.findChildren(QPlainTextEdit)[0]
-            plainTextEdit.setPlainText(self._plugin.nodepad_content)
+            widget.setPlainText(self._plugin.nodepad_content)
         if widget.windowTitle() != "Functions window":
             return
         table = widget.layout().itemAt(0).widget()

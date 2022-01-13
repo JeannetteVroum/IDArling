@@ -72,7 +72,7 @@ class IDBHooks(Hooks, ida_idp.IDB_Hooks):
 
     def hook_notepad(self, qwidget):
         # get the QPlainTextEdit children
-        self.plainTextEditor = qwidget.findChildren(QPlainTextEdit)[0]
+        self.plainTextEditor = qwidget
         self.plainTextEditor.textChanged.connect(self.notepad_changed)
 
     def notepad_changed(self):

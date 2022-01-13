@@ -258,6 +258,7 @@ class TreeFrame(QDialog):
 
         main_layout.addWidget(self._left_side, 0, 0)
         main_layout.setColumnStretch(0, 1)
+        main_layout.setColumnStretch(1, 2)
 
         self.right_side = QWidget(main)
         self._details_frame = DetailFrame(self, self._plugin)

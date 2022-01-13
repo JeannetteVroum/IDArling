@@ -189,12 +189,11 @@ class Client(ClientSocket):
         notepadWidget = ida_kernwin.find_widget('Database notepad')
         if notepadWidget is not None:
             notepad = sip.wrapinstance(int(notepadWidget), QWidget)
-            plainTextEdit = notepad.findChildren(QPlainTextEdit)[0]
             # check current text in editor, if the same do nothing
             # change text in notepad
             if text != self._plugin.nodepad_content:
                 self._plugin.nodepad_content = text
-                plainTextEdit.setPlainText(text)
+                notepad.setPlainText(text)
 
         elif text != self._plugin.nodepad_content:
             self._plugin.nodepad_content = text
