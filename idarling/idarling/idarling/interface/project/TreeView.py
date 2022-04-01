@@ -252,12 +252,13 @@ class TreeFrame(QDialog):
         self._left_side = QWidget(main)
         self._left_layout = QVBoxLayout(self._left_side)
         self._tree = ProjectTreeWidget(self, plugin)
+        self._left_side.resize(400, 600)
 
         self._tree.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self._left_layout.addWidget(self._tree)
 
         main_layout.addWidget(self._left_side, 0, 0)
-        main_layout.setColumnStretch(0, 1)
+        # main_layout.setColumnStretch(0, 1)
         main_layout.setColumnStretch(1, 2)
 
         self.right_side = QWidget(main)

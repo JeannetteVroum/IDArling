@@ -1,2 +1,2 @@
-SQLAlchemy==1.3.17
-ldap3==2.7
+SQLAlchemy==1.4.29
+ldap3==2.9.1
